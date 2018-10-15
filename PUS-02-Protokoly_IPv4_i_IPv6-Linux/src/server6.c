@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     int retval; /* Wartosc zwracana przez funkcje. */
 
     /* Gniazdowe struktury adresowe (dla klienta i serwera): */
-    struct sockaddr_in client_addr, server_addr;
+    struct sockaddr_in6 client_addr, server_addr;
 
     /* Rozmiar struktur w bajtach: */
     socklen_t client_addr_len, server_addr_len;
@@ -58,11 +58,11 @@ int main(int argc, char **argv)
     /* Wyzerowanie struktury adresowej serwera: */
     memset(&server_addr, 0, sizeof(server_addr));
     /* Domena komunikacyjna (rodzina protokolow): */
-    server_addr.sin_family = AF_INET;
+    server_addr.sin6_family = AF_INET;
     /* Adres nieokreslony (ang. wildcard address): */
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin6_addr = in6addr_any;
     /* Numer portu: */
-    server_addr.sin_port = htons(atoi(argv[1]));
+    server_addr.sin6_port = htons(atoi(argv[1]));
     /* Rozmiar struktury adresowej serwera w bajtach: */
     server_addr_len = sizeof(server_addr);
 
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    char* response = "Laboratorium PUS";
+    char *response = "Laboratorium PUS";
     while (1)
     {
 
@@ -94,8 +94,13 @@ int main(int argc, char **argv)
 
         fprintf(
             stdout, "TCP connection accepted from %s:%d\n",
-            inet_ntop(AF_INET, &client_addr.sin_addr, addr_buff, sizeof(addr_buff)),
-            ntohs(client_addr.sin_port));
+            inet_ntop(AF_INET, &client_addr.sin6_addr, addr_buff, sizeof(addr_buff)),
+            ntohs(client_addr.sin6_port));
+
+        if (IN6_IS_ADDR_V4MAPPED(&client_addr.sin6_addr))
+            fprintf(stdout, "Client is ipv6\n");
+        else
+            fprintf(stdout, "Client is ipv4\n");
 
         retval = send(client_socket, response, strlen(response), 0);
         if (retval == -1)
