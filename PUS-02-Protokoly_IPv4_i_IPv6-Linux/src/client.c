@@ -29,11 +29,11 @@ int main(int argc, char **argv)
 	char buff[256];				  /* Bufor dla funkcji recvfrom(). */
 	struct addrinfo *addr_info;
 
-	if (argc != 4)
+	if (argc != 3)
 	{
 		fprintf(
 			stderr,
-			"Invocation: %s <IPv4 ADDRESS> <PORT> <INTERFACE>\n", argv[0]);
+			"Invocation: %s <IPv4 ADDRESS> <PORT>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
