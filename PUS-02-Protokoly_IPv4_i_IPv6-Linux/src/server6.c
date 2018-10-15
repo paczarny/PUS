@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     }
 
     /* Utworzenie gniazda dla serwera */
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    server_socket = socket(AF_INET6, SOCK_STREAM, 0);
     if (server_socket == -1)
     {
         perror("socket()");
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     /* Wyzerowanie struktury adresowej serwera: */
     memset(&server_addr, 0, sizeof(server_addr));
     /* Domena komunikacyjna (rodzina protokolow): */
-    server_addr.sin6_family = AF_INET;
+    server_addr.sin6_family = AF_INET6;
     /* Adres nieokreslony (ang. wildcard address): */
     server_addr.sin6_addr = in6addr_any;
     /* Numer portu: */
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 
         fprintf(
             stdout, "TCP connection accepted from %s:%d\n",
-            inet_ntop(AF_INET, &client_addr.sin6_addr, addr_buff, sizeof(addr_buff)),
+            inet_ntop(AF_INET6, &client_addr.sin6_addr, addr_buff, sizeof(addr_buff)),
             ntohs(client_addr.sin6_port));
 
         if (IN6_IS_ADDR_V4MAPPED(&client_addr.sin6_addr))
