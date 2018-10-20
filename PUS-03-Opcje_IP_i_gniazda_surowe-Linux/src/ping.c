@@ -159,11 +159,8 @@ void parent()
 void child()
 {
 //proces potomny
-
-
-
     /* Utworzenie gniazda dla protokolu ICMP: */
-    /* Utworzenie gniazda dla protokolu ICMP: */
+      memset(&recvbuf, 0, sizeof(recvbuf));
         childSockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (childSockfd == -1) {
             perror("socket()");
@@ -205,6 +202,9 @@ void child()
 	
     while(1){
     /* Wyslanie komunikatu ICMP Echo: */
+    struct ip *ipheader = (struct ip *)recvbuf;
+    struct icmphdr *icmpheader = (struct icmphdr *)(recvbuf + sizeof(struct ip));
+
     socklen_t len = result->ai_addrlen;
     retval = recvfrom(
                  childSockfd,
@@ -216,7 +216,16 @@ void child()
     if (retval == -1) {
         perror("sentdo()");
     }
-
+        printf("---IP---\n");
+        printf("OD %s \n", inet_ntoa(ipheader->ip_src));
+        printf("TTL %d \n", ipheader->ip_ttl);
+        printf("Rozmiar Naglowka %d \n", ipheader->ip_hl);
+        printf("DO %s \n", inet_ntoa(ipheader->ip_dst));
+        printf("----ICMP----\n");
+        printf("Typ %d \n", icmpheader->type);
+        printf("Kod %d \n", icmpheader->code);
+        printf("Identyfikator %d \n", icmpheader->un.echo.id);
+        printf("Numer Sekwencyjny %d \n \n", icmpheader->un.echo.sequence);
      
     }
 }
