@@ -68,7 +68,13 @@ int main(int argc, char **argv)
 	}
 
 	// buff[retval] = '\0';
+	int s_length = sizeof(struct sockaddr_storage);
 
+	// Informacje o gniezdzie
+	char host_IP[255], host_PORT[255];
+	getsockname(sockfd, (struct sockaddr *)&sockfd, &s_length);
+	getnameinfo((struct sockaddr *)&sockfd, sizeof(struct sockaddr_storage), host_IP, NI_MAXHOST, host_PORT, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+	fprintf(stdout, "HOST ADDRESS: %s:%s \n", host_IP, host_PORT);
 	fprintf(stdout, "Server response: '%s'\n", buff);
 
 	close(sockfd);
