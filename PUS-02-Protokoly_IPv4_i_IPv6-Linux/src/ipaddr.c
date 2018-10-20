@@ -217,11 +217,11 @@ char* ipv4_binary_string(uint32_t addr) {
 
 /*
 CASE STUDY:
-./ip2addr 255.255.255.255
-./ip2addr abc
-./ip2addr 192.168.1
-./ip2addr 999.1.2
-./ip2addr 1.999.2
-./ip2addr 1.2.999
-./ip2addr ::1
+./ipaddr 255.255.255.255
+./ipaddr abc
+./ipaddr 192.168.1
+./ipaddr 999.1.2
+./ipaddr 1.999.2
+./ipaddr 1.2.999
+./ipaddr ::1
 */

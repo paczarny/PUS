@@ -98,9 +98,9 @@ int main(int argc, char **argv)
             ntohs(client_addr.sin6_port));
 
         if (IN6_IS_ADDR_V4MAPPED(&client_addr.sin6_addr))
-            fprintf(stdout, "Client is ipv6\n");
-        else
             fprintf(stdout, "Client is ipv4\n");
+        else
+            fprintf(stdout, "Client is ipv6\n");
 
         retval = send(client_socket, response, strlen(response), 0);
         if (retval == -1)
