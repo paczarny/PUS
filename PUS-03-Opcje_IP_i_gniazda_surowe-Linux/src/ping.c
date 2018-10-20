@@ -161,6 +161,9 @@ void child()
 //proces potomny
     /* Utworzenie gniazda dla protokolu ICMP: */
       memset(&recvbuf, 0, sizeof(recvbuf));
+    
+    
+    
         childSockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (childSockfd == -1) {
             perror("socket()");
@@ -176,7 +179,20 @@ void child()
             perror("setsockopt()");
             exit(EXIT_FAILURE);
         }
+    //odkomentuj jesli nie pojdzie:)
+    if (bind(childSockfd, result->ai_addr, result->ai_addrlen ) == -1) {
+        perror("bind()");
+        exit(EXIT_FAILURE);
+    }
 
+    /* Przeksztalcenie gniazda w gniazdo nasluchujace: */
+    if (listen(childSockfd, 10) == -1) {
+        perror("listen()");
+        exit(EXIT_FAILURE);
+    }
+
+    
+    
     /* Jezeli lista jest pusta (nie utworzono gniazda): */
     if (result == NULL) {
         fprintf(stderr, "Client failure: could not create socket.\n");
@@ -186,7 +202,7 @@ void child()
     /* Wypelnienie pol naglowka ICMP Echo: */
     srand(time(NULL));
     /* Typ komunikatu: */
-    icmp_header.type                =       8;
+    icmp_header.type                =       0;
     /* Kod komunikatu: */
     icmp_header.code                =       0;
     /* Identyfikator: */
