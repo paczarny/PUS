@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     retval = ioctl(sockfd, SIOCSIFHWADDR, &ifr);
     if (retval == -1)
     {
-        perror("ioctl()");
+        perror("ioctl SIOCSIFHWADDR()");
         exit(EXIT_FAILURE);
     }
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     retval = ioctl(sockfd, SIOCSIFMTU, &ifr);
     if (retval == -1)
     {
-        perror("ioctl()");
+        perror("ioctl SIOCSIFMTU()");
         exit(EXIT_FAILURE);
     }
 
