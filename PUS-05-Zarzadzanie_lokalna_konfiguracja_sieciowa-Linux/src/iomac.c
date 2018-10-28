@@ -16,12 +16,14 @@
 #include <net/if_arp.h>
 #include <netinet/in.h> /* struct sockaddr_in */
 #include <sys/ioctl.h>
+#include <net/if.h>
 
 int main(int argc, char **argv)
 {
 
     int sockfd, retval;
     struct arpreq request;
+    struct ifreq ifr;
 
     if (argc != 4)
     {
@@ -29,12 +31,21 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    // sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    // if (sockfd == -1)
-    // {
-    //     perror("socket()");
-    //     exit(EXIT_FAILURE);
-    // }
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1)
+    {
+        perror("socket()");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(ifr.ifr_name, argv[1]);
+    retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
+    if (retval == -1)
+    {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "MTU: %d\n", ifr.ifr_mtu);
 
     // memset(&request, 0, sizeof(struct arpreq));
 
@@ -71,6 +82,6 @@ int main(int argc, char **argv)
     //     exit(EXIT_FAILURE);
     // }
 
-    // close(sockfd);
-    // exit(EXIT_SUCCESS);
+    close(sockfd);
+    exit(EXIT_SUCCESS);
 }
