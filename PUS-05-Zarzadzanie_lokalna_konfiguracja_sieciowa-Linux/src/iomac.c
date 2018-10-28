@@ -18,6 +18,9 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 
+void print_mac(int sockfd, struct ifreq ifr);
+void print_mtu(int sockfd, struct ifreq ifr);
+
 int main(int argc, char **argv)
 {
 
@@ -39,58 +42,77 @@ int main(int argc, char **argv)
     }
 
     strcpy(ifr.ifr_name, argv[1]);
+
+    print_mac(sockfd, ifr);
+    print_mtu(sockfd, ifr);
+
+    /* Ustawienie MAC */
+    retval = sscanf(
+        argv[2], "%2x:%2x:%2x:%2x:%2x:%2x",
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[0],
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[1],
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[2],
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[3],
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[4],
+        (unsigned int *)&ifr.ifr_hwaddr.sa_data[5]);
+
+    if (retval != 6)
+    {
+        fprintf(stderr, "Invalid address format!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    retval = ioctl(sockfd, SIOCSIFHWADDR, &ifr);
+    if (retval == -1)
+    {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Ustawienie MTU */
+    ifr.ifr_mtu = atoi(argv[3]);
+    retval = ioctl(sockfd, SIOCSIFMTU, &ifr);
+    if (retval == -1)
+    {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+
+    print_mac(sockfd, ifr);
+    print_mtu(sockfd, ifr);
+
+    // memset(&request, 0, sizeof(struct arpreq));
+
+    close(sockfd);
+    exit(EXIT_SUCCESS);
+}
+
+void print_mac(int sockfd, struct ifreq ifr)
+{
+    /* Pobranie MAC */
+    int retval = ioctl(sockfd, SIOCGIFHWADDR, &ifr);
+    if (retval == -1)
+    {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "MAC: %2x:%2x:%2x:%2x:%2x:%2x\n",
+            (unsigned char)ifr.ifr_hwaddr.sa_data[0],
+            (unsigned char)ifr.ifr_hwaddr.sa_data[1],
+            (unsigned char)ifr.ifr_hwaddr.sa_data[2],
+            (unsigned char)ifr.ifr_hwaddr.sa_data[3],
+            (unsigned char)ifr.ifr_hwaddr.sa_data[4],
+            (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
+}
+
+void print_mtu(int sockfd, struct ifreq ifr)
+{
     /* Pobranie MTU */
-    retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
+    int retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
     if (retval == -1)
     {
         perror("ioctl()");
         exit(EXIT_FAILURE);
     }
     fprintf(stdout, "MTU: %d\n", ifr.ifr_mtu);
-    /* Pobranie MAC */
-    retval = ioctl(sockfd, SIOCGIFHWADDR, &ifr);
-    if (retval == -1)
-    {
-        perror("ioctl()");
-        exit(EXIT_FAILURE);
-    }
-    fprintf(stdout, "MAC: %d\n", ifr.ifr_hwaddr);
-
-    // memset(&request, 0, sizeof(struct arpreq));
-
-    // ((struct sockaddr_in *)&(request.arp_pa))->sin_family = AF_INET;
-    // inet_pton(
-    //     AF_INET, argv[1],
-    //     &(((struct sockaddr_in *)&(request.arp_pa))->sin_addr.s_addr));
-
-    // /* Adres MAC: */
-    // request.arp_ha.sa_family = ARPHRD_ETHER;
-
-    // retval = sscanf(
-    //     argv[2], "%2x:%2x:%2x:%2x:%2x:%2x",
-    //     (unsigned int *)&request.arp_ha.sa_data[0],
-    //     (unsigned int *)&request.arp_ha.sa_data[1],
-    //     (unsigned int *)&request.arp_ha.sa_data[2],
-    //     (unsigned int *)&request.arp_ha.sa_data[3],
-    //     (unsigned int *)&request.arp_ha.sa_data[4],
-    //     (unsigned int *)&request.arp_ha.sa_data[5]);
-
-    // if (retval != 6)
-    // {
-    //     fprintf(stderr, "Invalid address format!\n");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // request.arp_flags = ATF_COM;   /* Wymagana flaga - completed ARP entry. */
-    // request.arp_flags |= ATF_PERM; /* Wpis permanentny. */
-
-    // retval = ioctl(sockfd, SIOCSARP, &request);
-    // if (retval == -1)
-    // {
-    //     perror("ioctl()");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    close(sockfd);
-    exit(EXIT_SUCCESS);
 }
