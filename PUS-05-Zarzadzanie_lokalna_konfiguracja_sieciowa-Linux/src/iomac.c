@@ -39,6 +39,7 @@ int main(int argc, char **argv)
     }
 
     strcpy(ifr.ifr_name, argv[1]);
+    /* Pobranie MTU */
     retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
     if (retval == -1)
     {
@@ -46,6 +47,14 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     fprintf(stdout, "MTU: %d\n", ifr.ifr_mtu);
+    /* Pobranie MAC */
+    retval = ioctl(sockfd, SIOCGIFHWADDR, &ifr);
+    if (retval == -1)
+    {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "MAC: %d\n", ifr.ifr_hwaddr);
 
     // memset(&request, 0, sizeof(struct arpreq));
 
