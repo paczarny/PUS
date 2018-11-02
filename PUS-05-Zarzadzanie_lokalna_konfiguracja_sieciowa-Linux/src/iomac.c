@@ -41,10 +41,29 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    memset(&ifr, 0, sizeof(struct ifreq));
+
     strcpy(ifr.ifr_name, argv[1]);
 
     print_mac(sockfd, ifr);
     print_mtu(sockfd, ifr);
+
+
+    retval = ioctl(sockfd, SIOCGIFFLAGS, &ifr);
+    if (retval == -1) {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+
+    ifr.ifr_flags &= ~IFF_UP;
+    retval = ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+    if (retval == -1) {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Adres MAC: */
+    ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
     /* Ustawienie MAC */
     retval = sscanf(
@@ -68,6 +87,15 @@ int main(int argc, char **argv)
         perror("ioctl SIOCSIFHWADDR()");
         exit(EXIT_FAILURE);
     }
+
+    ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+    retval = ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+    if (retval == -1) {
+        perror("ioctl()");
+        exit(EXIT_FAILURE);
+    }
+
+
 
     /* Ustawienie MTU */
     ifr.ifr_mtu = atoi(argv[3]);
@@ -111,7 +139,7 @@ void print_mtu(int sockfd, struct ifreq ifr)
     int retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
     if (retval == -1)
     {
-        perror("ioctl()");
+        perror("ioctl()ccc");
         exit(EXIT_FAILURE);
     }
     fprintf(stdout, "MTU: %d\n", ifr.ifr_mtu);
