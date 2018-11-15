@@ -117,10 +117,7 @@ static int callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
     u_int32_t id; /* ID pakietu. */
 
-
     id = print_packet(nfa);
-
-    fprintf(stdout, "Leaving callback.\n");
 
     unsigned char *dataPayload;
 
@@ -128,18 +125,14 @@ static int callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
     struct icmphdr *header = (struct icmphdr *)(dataPayload + sizeof(struct iphdr));
     char *packet_data = (char *)(dataPayload + sizeof(struct iphdr) + sizeof(struct icmphdr));
-    int packet_size = retval - sizeof(struct icmphdr) - sizeof(struct iphdr);
+    int data_size = retval - sizeof(struct iphdr) - sizeof(struct icmphdr);
 
-    swap_bytes(packet_data ,packet_size);
+    swap_bytes(packet_data, data_size);
 
-    int sum = header->checksum;
-    printf("CHECKSUM BEGORE: %X\n",header->checksum );
-
+    unsigned short *icmpDatagram = (unsigned short *)(dataPayload + sizeof(struct iphdr));
     header->checksum = 0;
-   /* Wypisanie informacji na temat pakietu: */
-    //header->checksum = internet_checksum((unsigned short *) dataPayload, retval);
-    header->checksum=sum;
-    printf("CHECKSUM AFTER: %X\n\n",header->checksum );
+    header->checksum = internet_checksum(icmpDatagram , retval-sizeof(struct iphdr));
+
 
     /*
      * Okreslenie werdyktu.
