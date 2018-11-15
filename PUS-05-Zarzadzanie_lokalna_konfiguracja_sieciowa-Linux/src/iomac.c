@@ -139,7 +139,7 @@ void print_mtu(int sockfd, struct ifreq ifr)
     int retval = ioctl(sockfd, SIOCGIFMTU, &ifr);
     if (retval == -1)
     {
-        perror("ioctl()ccc");
+        perror("ioctl()");
         exit(EXIT_FAILURE);
     }
     fprintf(stdout, "MTU: %d\n", ifr.ifr_mtu);
