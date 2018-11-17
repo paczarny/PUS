@@ -30,9 +30,10 @@ int main(int argc, char **argv)
 
     if (!((argc==5) || (argc==3)))
     {
-        fprintf(stderr, "Invocation: %s <INTERFACE> <MAC ADDRESS> <MTU>\n", argv[0]);
+        fprintf(stderr, "Invocation: <INTERFACE> <add or down> <if adding IP address> <if adding mask>\n");
         exit(EXIT_FAILURE);
     }
+
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd == -1)
@@ -41,14 +42,16 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    memset(&ifr, 0, sizeof(struct ifreq));
+        memset(&ifr, 0, sizeof(struct ifreq));
+        strcpy(ifr.ifr_name, argv[1]);
 
-	if(strcmp(argv[2],"down")==0){
-	    
-
+	if(strcmp(argv[2],"down")){
+		ioctl(sockfd, SIOCGIFFLAGS, &ifr); /* Pobranie aktualnych flag */
+		strcpy(ifr.ifr_name, argv[1]);
+		ifr.ifr_flags &= ~IFF_UP;
+		ioctl(sockfd, SIOCSIFFLAGS, &ifr);
 	}
-	else if(strcmp(argv[2],"up")==0){
-	    strcpy(ifr.ifr_name, argv[1]);
+	else if(strcmp(argv[2],"add")==0){
 	    ifr.ifr_addr.sa_family = AF_INET;
 	    retval = inet_pton(AF_INET, argv[3], &ifr.ifr_addr.sa_data);
 	    if(retval == 0){
@@ -75,8 +78,14 @@ int main(int argc, char **argv)
 		perror("ioctl()mask");
 		exit(EXIT_FAILURE);
 	    }
-	}else{
-		printf("Wrong method(use down or up)\n");
+
+		ifr.ifr_flags |= IFF_UP | IFF_RUNNING; /* Dodanie nowych flag */
+		ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+	     if (retval == -1) {
+                perror("ioctl()mask");
+                exit(EXIT_FAILURE);
+            }
+
 	}
 
     close(sockfd);
