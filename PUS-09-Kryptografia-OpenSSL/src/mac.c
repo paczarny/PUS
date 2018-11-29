@@ -12,7 +12,6 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h> 
-
 int main(int argc, char **argv) {
 
     /* Wartosc zwracana przez funkcje: */
@@ -30,7 +29,6 @@ int main(int argc, char **argv) {
     unsigned int message_len, digest_len;
 
     /* Kontekst: */
-    EVP_MD_CTX *ctx_md;
     HMAC_CTX *ctx_hmac;
 
     const EVP_MD* md;
@@ -71,33 +69,25 @@ int main(int argc, char **argv) {
     message_len = strlen(message);
 
     /* Alokacja pamieci dla kontekstu: */
-    ctx_md = (EVP_MD_CTX*)malloc(sizeof(EVP_MD_CTX));
     ctx_hmac = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
 
     /* Inicjalizacja kontekstu: */
-    EVP_MD_CTX_init(ctx_md);
     HMAC_CTX_init(ctx_hmac);
 
     /* Konfiguracja kontekstu: */
-    retval = EVP_DigestInit_ex(ctx_md, md, NULL);
-    if (!retval) {
-        ERR_print_errors_fp(stderr);
-        exit(EXIT_FAILURE);
-    }
-
-	retval = HMAC_Init_ex(ctx_hmac, key, sizeof(key), md, NULL);
+    retval = HMAC_Init_ex(ctx_hmac, key, sizeof(key), md, NULL);
 	if (!retval) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 	
-	retval = HMAC_Update(ctx_hmac,(const unsigned char *)message, message_len);
+    retval = HMAC_Update(ctx_hmac,(const unsigned char *)message, message_len);
 	if (!retval) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 	
-	retval = HMAC_Final(ctx_hmac, digest, &digest_len);
+    retval = HMAC_Final(ctx_hmac, digest, &digest_len);
 	if (!retval) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
@@ -106,11 +96,9 @@ int main(int argc, char **argv) {
      * Usuwa wszystkie informacje z kontekstu i zwalnia pamiec zwiazana
      * z kontekstem:
      */
-    EVP_MD_CTX_cleanup(ctx_md);
-    HMAC_CTX_cleanup(ctx_hmac);
 
     /* Usuniecie nazw funkcji skrotu z pamieci. */
-    EVP_cleanup();
+    HMAC_cleanup(ctx_hmac);
 
     fprintf(stdout, "Klucz uwierzytelniający (hex): ");
     for (i = 0; i < digest_len; i++) {
@@ -119,9 +107,6 @@ int main(int argc, char **argv) {
 
     fprintf(stdout, "\n");
 
-    if (ctx_md) {
-        free(ctx_md);
-    }
 
     /* Zwolnienie tekstowych opisow bledow: */
     ERR_free_strings();

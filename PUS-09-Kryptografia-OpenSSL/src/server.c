@@ -13,11 +13,20 @@
 #include <unistd.h>     /* close() */
 #include <string.h>
 #include <errno.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h> 
+void get_hmac(char message[], int message_len, unsigned char digest[]);
+void encrypt_message(char message[], char plaintext[]);
 
 int main(int argc, char** argv) {
 
+    char            plaintext[80];
     int             sockfd; /* Deskryptor gniazda. */
     int             retval; /* Wartosc zwracana przez funkcje. */
+    char            message[256];
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    int             i;
 
     /* Gniazdowe struktury adresowe (dla klienta i serwera): */
     struct          sockaddr_in client_addr, server_addr;
@@ -82,10 +91,197 @@ int main(int argc, char** argv) {
             ntohs(client_addr.sin_port)
            );
 
-    fprintf(stdout, "Message: ");
-    fwrite(buff, sizeof(char), retval, stdout);
-    fprintf(stdout, "\n");
+
+    encrypt_message(buff, plaintext);
+    i=16;
+    while(plaintext[i]!='\0')
+    {
+        message[i-16]=plaintext[i];
+        i++;
+    }
+    message[i-16]='\0';
+
+    get_hmac(message, strlen(message), digest);
+
+
+    fprintf(stdout, "\nKlucz uwierzytelniający (hex): ");
+    for (i = 0; i < 10; i++) {
+        fprintf(stdout, "%02x", digest[i]);
+    }
+
+    fprintf(stdout, "\nKlucz uwierzytelniający (hex): ");
+    for (i = 0; i < 5; i++) {
+        fprintf(stdout, "%02x", plaintext[i]);
+    }
+
 
     close(sockfd);
     exit(EXIT_SUCCESS);
+}
+
+
+
+void encrypt_message(char ciphertext[], char plaintext[])
+{
+        /* Wartosc zwracana przez funkcje: */
+    int retval;
+
+    int tmp;
+
+    /* Rozmiar tekstu i szyfrogramu: */
+    int plaintext_len, ciphertext_len;
+
+    ciphertext_len=48;
+
+
+
+    /*
+     * == 0 - padding PKCS nie bedzie stosowany
+     * != 0 - padding PKCS bedzie stosowany
+     */
+    int padding=1;
+
+    /* Klucz i wektor inicjalizacyjny sa stalymi, aby wyniki byly przewidywalne. */
+
+    /* Klucz: */
+    unsigned char key[] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,
+                           0x00,0x01,0x02,0x03,0x04,0x05
+                          };
+
+    /* Kontekst: */
+    EVP_CIPHER_CTX *ctx;
+
+    const EVP_CIPHER* cipher;
+
+
+
+    /* Zaladowanie tekstowych opisow bledow: */
+    ERR_load_crypto_strings();
+
+    /* Alokacja pamieci dla kontekstu: */
+    ctx = EVP_CIPHER_CTX_new();
+    /* Inicjalizacja kontekstu: */
+    EVP_CIPHER_CTX_init(ctx);
+
+    /*
+     * Parametry algorytmu AES dla trybu ECB i klucza o rozmiarze 128-bitow.
+     * Liste funkcji typu "EVP_aes_128_ecb()" mozna uzyskac z pliku <openssl/evp.h>.
+     * Strony podrecznika systemowego nie sa kompletne.
+     */
+    cipher = EVP_aes_128_ecb();
+    EVP_CIPHER_block_size(cipher);
+
+    fprintf(stdout, "Decrypting...\n\n");
+    /* Konfiguracja kontekstu dla odszyfrowywania: */
+    retval = EVP_DecryptInit_ex(ctx, cipher, NULL, key, NULL);
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    /*
+     * Domyslnie OpenSSL stosuje padding. 0 - padding nie bedzie stosowany.
+     * Funkcja moze byc wywolana tylko po konfiguracji kontekstu
+     * dla szyfrowania/deszyfrowania (odzielnie dla kazdej operacji).
+     */
+    EVP_CIPHER_CTX_set_padding(ctx, padding);
+
+    /* Odszyfrowywanie: */
+    retval = EVP_DecryptUpdate(ctx, (unsigned char*)plaintext, &plaintext_len,
+                               (const unsigned char *)ciphertext, ciphertext_len);
+
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    /*
+     * Prosze zwrocic uwage, ze rozmiar bufora 'plaintext' musi byc co najmniej o
+     * rozmiar bloku wiekszy od dlugosci szyfrogramu (na padding):
+     */
+    retval = EVP_DecryptFinal_ex(ctx, (unsigned char*)plaintext + plaintext_len, &tmp);
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    plaintext_len += tmp;
+    plaintext[plaintext_len] = '\0';
+
+    EVP_CIPHER_CTX_cleanup(ctx);
+    if (ctx) {
+        free(ctx);
+    }
+    /* Zwolnienie tekstowych opisow bledow: */
+    ERR_free_strings();
+}
+
+
+void get_hmac(char message[], int message_len, unsigned char digest[]){
+    /* Wartosc zwracana przez funkcje: */
+    int retval;
+
+    /* Rozmiar tekstu i szyfrogramu: */
+    unsigned int  digest_len;
+
+    /* Kontekst: */
+    HMAC_CTX *ctx_hmac;
+    const EVP_MD* md;
+    
+    unsigned char key[] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,
+                           0x00,0x01,0x02,0x03,0x04,0x05
+                          };
+
+    /* Zaladowanie tekstowych opisow bledow: */
+    ERR_load_crypto_strings();
+
+    /*
+     * Zaladowanie nazw funkcji skrotu do pamieci.
+     * Wymagane przez EVP_get_digestbyname():
+     */
+    OpenSSL_add_all_digests();
+
+    md = EVP_get_digestbyname("md5");
+    if (!md) {
+        fprintf(stderr, "Unknown message digest: %s\n", "md5");
+        exit(EXIT_FAILURE);
+    }
+    /* Alokacja pamieci dla kontekstu: */
+    ctx_hmac = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
+
+    /* Inicjalizacja kontekstu: */
+    HMAC_CTX_init(ctx_hmac);
+
+    /* Konfiguracja kontekstu: */
+    retval = HMAC_Init_ex(ctx_hmac, key, sizeof(key), md, NULL);
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+    
+    retval = HMAC_Update(ctx_hmac,(const unsigned char *)message, message_len);
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+    
+    retval = HMAC_Final(ctx_hmac, digest, &digest_len);
+    if (!retval) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+    /*
+     * Usuwa wszystkie informacje z kontekstu i zwalnia pamiec zwiazana
+     * z kontekstem:
+     */
+
+    /* Usuniecie nazw funkcji skrotu z pamieci. */
+    HMAC_cleanup(ctx_hmac);
+
+    
+    /* Zwolnienie tekstowych opisow bledow: */
+    ERR_free_strings();
+
+
+
 }

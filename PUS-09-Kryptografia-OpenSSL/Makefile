@@ -45,13 +45,13 @@ mac.o: $(SRCDIR)/mac.c
 	$(CC) $(CFLAGS) -c $(SRCDIR)/$(basename $@).c -o $(BINDIR)/$(basename $@).o
 
 client: client.o
-	$(CC) $(CFLAGS) $(BINDIR)/$@.o -o $(BINDIR)/$@
+	$(CC) $(CFLAGS) $(BINDIR)/$@.o -lssl -lcrypto -o $(BINDIR)/$@
 
 client.o: $(SRCDIR)/client.c
 	$(CC) $(CFLAGS) -c $(SRCDIR)/$(basename $@).c -o $(BINDIR)/$(basename $@).o
 
 server: server.o
-	$(CC) $(CFLAGS) $(BINDIR)/$@.o -o $(BINDIR)/$@
+	$(CC) $(CFLAGS) $(BINDIR)/$@.o -lssl -lcrypto -o $(BINDIR)/$@
 
 server.o: $(SRCDIR)/server.c
 	$(CC) $(CFLAGS) -c $(SRCDIR)/$(basename $@).c -o $(BINDIR)/$(basename $@).o
